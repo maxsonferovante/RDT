@@ -419,7 +419,6 @@ class BaseTransformer:
         if any(column not in data.columns for column in self.columns):
             return data
 
-        data = data.copy()
         columns_data = self._get_columns_data(data, self.columns)
         transformed_data = self._transform(columns_data)
         data = data.drop(self.columns, axis=1)
@@ -472,7 +471,6 @@ class BaseTransformer:
         if any(column not in data.columns for column in self.output_columns):
             return data
 
-        data = data.copy()
         columns_data = self._get_columns_data(data, self.output_columns)
         original_missing_values = self.missing_value_generation
         if self.missing_value_generation is not None and pd.isna(columns_data).any().any():

@@ -549,10 +549,37 @@ class FrequencyEncoder(BaseTransformer):
         return mean
 
     def _transform_by_row(self, data):
-        """Transform the data row by row."""
-        data = data.infer_objects().fillna(np.nan).apply(self._get_value).to_numpy()
+        """Transform the data using vectorized operations."""
+        data_array = data.to_numpy()
+        result = np.empty(shape=(len(data),), dtype=float)
 
-        return data
+        # Processar NaN separadamente
+        nan_mask = pd.isna(data_array)
+
+        # Vetorialização: mapear cada categoria para seu mean/std
+        for category, values in self.intervals.items():
+            if category is np.nan:
+                mask = nan_mask
+            else:
+                mask = data_array == category
+
+            if mask.sum() == 0:
+                continue
+
+            start, end, mean, std = values
+
+            if self.add_noise:
+                result[mask] = norm.rvs(
+                    mean,
+                    std,
+                    size=mask.sum(),
+                    random_state=self.random_states['transform'],
+                )
+                result[mask] = self._clip_noised_transform(result[mask], start, end)
+            else:
+                result[mask] = mean
+
+        return result
 
     def _transform(self, data):
         """Transform the categorical values to float representatives.

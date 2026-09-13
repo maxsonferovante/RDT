@@ -612,14 +612,24 @@ class ClusterBasedNormalizer(FloatFormatter):
         component_probs = self._bgm_transformer.predict_proba(data)
         component_probs = component_probs[:, self.valid_component_indicator]
 
-        selected_component = np.zeros(len(data), dtype='int')
-        for i in range(len(data)):
-            component_prob_t = component_probs[i] + 1e-6
-            component_prob_t = component_prob_t / component_prob_t.sum()
-            selected_component[i] = np.random.choice(
-                np.arange(self.valid_component_indicator.sum()),
-                p=component_prob_t,
-            )
+        # Vetorialização do loop de seleção de componente
+        component_probs = component_probs + 1e-6
+        component_probs = component_probs / component_probs.sum(axis=1, keepdims=True)
+
+        # Seleção vetorializada usando cumulative sum + searchsorted
+        n_components = self.valid_component_indicator.sum()
+        cumsum = np.cumsum(component_probs, axis=1)
+        rand_vals = np.random.random(size=len(data))
+
+        # Para searchsorted funcionar corretamente com 2D:
+        # cumsum.T tem shape (n_components, n_rows) e rand_vals tem shape (n_rows,)
+        # searchsorted retorna (n_components,) - onde cada valor de rand_vals seria inserido
+        # Mas queremos (n_rows,) - qual componente cada row seleciona
+        # Portanto, usamos a abordagem: rand_vals[:, None] <= cumsum e pegamos o primeiro True por row
+        selected_component = np.argmax(rand_vals[:, None] <= cumsum, axis=1)
+
+        # Garantir que selected_component está dentro dos limites
+        selected_component = np.clip(selected_component, 0, n_components - 1)
 
         aranged = np.arange(len(data))
         normalized = normalized_values[aranged, selected_component].reshape([
