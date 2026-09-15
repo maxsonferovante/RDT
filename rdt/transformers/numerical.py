@@ -320,7 +320,7 @@ class GaussianNormalizer(FloatFormatter):
         except ImportError as error:
             error.msg += (
                 '\n\nIt seems like `copulas` is not installed.\n'
-                'Please install it using:\n\n    pip install rdt[copulas]'
+                'Please install it using:\n\n    pip install copulas'
             )
             raise
 

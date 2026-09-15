@@ -3,12 +3,17 @@ import warnings
 from unittest import TestCase
 from unittest.mock import Mock, patch
 
-import copulas
 import numpy as np
 import pandas as pd
 import pytest
-from copulas import univariate
 from pandas.api.types import is_float_dtype
+
+try:
+    import copulas
+    from copulas import univariate
+except ImportError:  # pragma: no cover
+    copulas = None
+    univariate = None
 
 from rdt.errors import InvalidDataError, TransformerInputError
 from rdt.transformers.null import NullTransformer
@@ -782,6 +787,7 @@ class TestFloatFormatter(TestCase):
         assert transformer._dtype == dtype
 
 
+@pytest.mark.skipif(copulas is None, reason='copulas is not installed')
 class TestGaussianNormalizer:
     def test___init__super_attrs(self):
         """super() arguments are properly passed and set as attributes."""
@@ -838,7 +844,7 @@ class TestGaussianNormalizer:
 
         Raise:
             - ImportError('\n\nIt seems like `copulas` is not installed.\n'
-            'Please install it using:\n\n    pip install rdt[copulas]')
+            'Please install it using:\n\n    pip install copulas')
         """
         __py_import__ = __import__
 
@@ -849,7 +855,7 @@ class TestGaussianNormalizer:
             return __py_import__(name, *args)
 
         with patch('builtins.__import__', side_effect=custom_import):
-            with pytest.raises(ImportError, match=r'pip install rdt\[copulas\]'):
+            with pytest.raises(ImportError, match=r'pip install copulas'):
                 GaussianNormalizer._get_distributions()
 
     def test__get_distributions(self):

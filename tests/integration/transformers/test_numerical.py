@@ -3,7 +3,11 @@ import re
 import numpy as np
 import pandas as pd
 import pytest
-from copulas import univariate
+
+try:
+    from copulas import univariate
+except ImportError:  # pragma: no cover
+    univariate = None
 
 from rdt.transformers.null import NullTransformer
 from rdt.transformers.numerical import (
@@ -339,6 +343,7 @@ class TestFloatFormatter:
         pd.testing.assert_frame_equal(reverse_transformed_data, data.round(0))
 
 
+@pytest.mark.skipif(univariate is None, reason='copulas is not installed')
 class TestGaussianNormalizer:
     def test_stats(self):
         data = pd.DataFrame(np.random.normal(loc=4, scale=4, size=1000), columns=['a'])
